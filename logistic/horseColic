@@ -1,0 +1,93 @@
+from numpy import *
+
+# 读取数据
+def LoadData(filename):
+    datamats=[]
+    datalables=[]
+    with open(filename) as f:
+        for line in f.readlines(f):
+            temp=line.strip().split()
+            datamats.append([1.0,float(temp[0]),float(temp[1])])
+            datalables.append(float(temp[2]))
+    return datamats,datalables
+
+def sigmoid(inp):
+    return 1.0 / (1 + exp(-inp))
+
+def stocGradAscent1(trainingSet,trainingLables,numIter=500):
+    m,n=shape(trainingSet)
+    weights=ones(n)
+    for j in range(numIter):
+        # 用于纪录还有哪些纪录没有用到
+        dataIndex=list(range(m))
+        # 遍历每一行
+        for i in range(m):
+            # 设置学习补偿alpha，动态变化
+            # alpha=4.0/(1.0+i+j)+0.01
+            alpha = 4 / (1.0 + i + j) + 0.01
+            # 选择随机样本（第几行的数据）
+            randIndex=int(random.uniform(0,len(dataIndex)))
+            # 计算函数值与代价函数
+            h=sigmoid(sum(trainingSet[randIndex]*weights))
+            error=trainingLables[randIndex]-h
+            weights=weights+alpha*error*trainingSet[randIndex]
+            del (dataIndex[randIndex])
+    return weights
+
+def classifyVector(inx,weights):
+    temp=sigmoid(sum(inx*weights))
+    if temp>0.5:return 1.0
+    else: return 0.0
+# 需要用随机测试的方法
+def colicTest():
+    frTrain=open('horseColicTraining.txt')
+    frTest=open('horseColicTest.txt')
+    trainingSet=[]
+    trainingLabels=[]
+    for line in frTrain.readlines():
+        # 首先将每一行根据空格进行切分，并且去掉两端的空格
+        currentLine=line.strip().split('\t')
+        # 获得了一行数据之后将前1-20存入数据集，21列存为分类
+        lineArr=[]
+        for i in list(range(21)):
+            lineArr.append(float(currentLine[i]))
+        trainingSet.append(lineArr)
+        trainingLabels.append(float(currentLine[21]))
+        # 到达此步骤时，基本训练数据已经准备完毕
+        # 开始计算各个项的theta
+    trainingWeights=stocGradAscent1(array(trainingSet),trainingLabels,500)
+    # print(trainingWeights)
+    errorCount=0
+    numTestVec=0.0
+    # 获取test文件中的数据
+    for line in frTest.readlines():
+        # 计算一共有多少条数据
+        numTestVec+=1.0
+        # 获取每一行中的数据，以空格为切分点，并去掉两头的tab
+        currentLine=line.strip().split('\t')
+        lineArr=[]
+        temp=0
+        for i in range(21):
+            if currentLine[i]=='':
+                lineArr.append(temp)
+            else:
+                lineArr.append(float(currentLine[i]))
+            # 此时得到的test中的数据不用读取到数组中
+            # 因为直接利用weight进行计算并判断与实际lable相同
+        if(int(classifyVector(array(lineArr),trainingWeights))!=int(currentLine[21])):
+            errorCount+=1
+            # 计算错误率
+    errorRate=(float(errorCount)/numTestVec)
+    print(errorRate)
+    return errorRate
+
+def multiTest():
+    numTests=10
+    errorNum=0.0
+    for k in range(numTests):
+        errorNum+=float(colicTest())
+    errorAveData=(float(errorNum)/numTests)
+    print("the average is "+str(errorAveData))
+
+
+multiTest()
